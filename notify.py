@@ -166,6 +166,22 @@ def _as_bool(value, default: bool = False) -> bool:
     return default
 
 
+def post_with_retry(url: str, max_retries: int = 3, retry_delay: int = 2, **kwargs):
+    """
+    统一的 POST 重试封装。
+    """
+    last_error = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            return requests.post(url, **kwargs)
+        except requests.RequestException as e:
+            last_error = e
+            logger.warning(f"HTTP 请求异常（第{attempt}次）：{url} - {e}")
+            if attempt < max_retries:
+                time.sleep(retry_delay)
+    raise last_error
+
+
 def bark(title: str, content: str) -> None:
     """
     使用 bark 推送消息。
@@ -201,7 +217,7 @@ def bark(title: str, content: str) -> None:
         data[bark_params.get(pair[0])] = pair[1]
     headers = {"Content-Type": "application/json;charset=utf-8"}
     try:
-        response = requests.post(
+        response = post_with_retry(
             url=url, data=json.dumps(data), headers=headers, timeout=15
         ).json()
 
@@ -240,7 +256,7 @@ def dingding_bot(title: str, content: str) -> None:
     headers = {"Content-Type": "application/json;charset=utf-8"}
     data = {"msgtype": "text", "text": {"content": f"{title}\n\n{content}"}}
     try:
-        response = requests.post(
+        response = post_with_retry(
             url=url, data=json.dumps(data), headers=headers, timeout=15
         ).json()
 
@@ -274,7 +290,7 @@ def feishu_bot(title: str, content: str) -> None:
         data["sign"] = sign
 
     try:
-        response = requests.post(url, data=json.dumps(data), timeout=15).json()
+        response = post_with_retry(url, data=json.dumps(data), timeout=15).json()
 
         if response.get("StatusCode") == 0 or response.get("code") == 0:
             logger.info("飞书 推送成功！")
@@ -319,7 +335,7 @@ def gotify(title: str, content: str) -> None:
         "priority": push_config.get("GOTIFY_PRIORITY"),
     }
     try:
-        response = requests.post(url, data=data, timeout=15).json()
+        response = post_with_retry(url, data=data, timeout=15).json()
 
         if response.get("id"):
             logger.info("gotify 推送成功！")
@@ -341,7 +357,7 @@ def iGot(title: str, content: str) -> None:
     data = {"title": title, "content": content}
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     try:
-        response = requests.post(url, data=data, headers=headers, timeout=15).json()
+        response = post_with_retry(url, data=data, headers=headers, timeout=15).json()
 
         if response.get("ret") == 0:
             logger.info("iGot 推送成功！")
@@ -368,21 +384,14 @@ def serverJ(title: str, content: str) -> None:
     else:
         url = f'https://sctapi.ftqq.com/{push_config.get("PUSH_KEY")}.send'
 
-    # 添加重试机制和超时处理
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            response = requests.post(url, data=data, timeout=15).json()
-            if response.get("errno") == 0 or response.get("code") == 0:
-                logger.info("serverJ 推送成功！")
-            else:
-                logger.error(f'serverJ 推送失败！错误信息：{response.get("message", "未知错误")}')
-            return
-        except Exception as e:
-            logger.error(f"serverJ 推送异常（第{attempt + 1}次）：{e}")
-            if attempt < max_retries - 1:
-                time.sleep(2)
-    logger.error(f"serverJ 推送失败！已重试{max_retries}次")
+    try:
+        response = post_with_retry(url, data=data, timeout=15).json()
+        if response.get("errno") == 0 or response.get("code") == 0:
+            logger.info("serverJ 推送成功！")
+        else:
+            logger.error(f'serverJ 推送失败！错误信息：{response.get("message", "未知错误")}')
+    except Exception as e:
+        logger.error(f"serverJ 推送异常: {e}")
 
 
 def pushdeer(title: str, content: str) -> None:
@@ -403,7 +412,7 @@ def pushdeer(title: str, content: str) -> None:
         url = push_config.get("DEER_URL")
 
     try:
-        response = requests.post(url, data=data, timeout=15).json()
+        response = post_with_retry(url, data=data, timeout=15).json()
         # 安全取值：先检查 response 和 content
         content_res = response.get("content")
         if content_res and isinstance(content_res, dict) and len(content_res.get("result", [])) > 0:
@@ -424,7 +433,7 @@ def chat(title: str, content: str) -> None:
     data = "payload=" + json.dumps({"text": title + "\n" + content})
     url = push_config.get("CHAT_URL") + push_config.get("CHAT_TOKEN")
     try:
-        response = requests.post(url, data=data, timeout=15)
+        response = post_with_retry(url, data=data, timeout=15)
         if response.status_code == 200:
             logger.info("Chat 推送成功！")
         else:
@@ -456,7 +465,7 @@ def pushplus_bot(title: str, content: str) -> None:
     body = json.dumps(data).encode(encoding="utf-8")
     headers = {"Content-Type": "application/json"}
     try:
-        response = requests.post(url=url, data=body, headers=headers, timeout=15).json()
+        response = post_with_retry(url=url, data=body, headers=headers, timeout=15).json()
 
         code = response.get("code")
         if code == 200:
@@ -467,7 +476,7 @@ def pushplus_bot(title: str, content: str) -> None:
             # 备用接口
             url_old = "http://pushplus.hxtrip.com/send"
             headers["Accept"] = "application/json"
-            response = requests.post(url=url_old, data=body, headers=headers, timeout=15).json()
+            response = post_with_retry(url=url_old, data=body, headers=headers, timeout=15).json()
             if response.get("code") == 200:
                 logger.info("PUSHPLUS(hxtrip) 推送成功！")
             else:
@@ -500,7 +509,7 @@ def weplus_bot(title: str, content: str) -> None:
     body = json.dumps(data).encode(encoding="utf-8")
     headers = {"Content-Type": "application/json"}
     try:
-        response = requests.post(url=url, data=body, headers=headers, timeout=15).json()
+        response = post_with_retry(url=url, data=body, headers=headers, timeout=15).json()
 
         if response.get("code") == 200:
             logger.info("微加机器人 推送成功！")
@@ -521,7 +530,7 @@ def qmsg_bot(title: str, content: str) -> None:
     url = f'https://qmsg.zendee.cn/{push_config.get("QMSG_TYPE")}/{push_config.get("QMSG_KEY")}'
     payload = {"msg": f'{title}\n\n{content.replace("----", "-")}'.encode("utf-8")}
     try:
-        response = requests.post(url=url, params=payload, timeout=15).json()
+        response = post_with_retry(url=url, params=payload, timeout=15).json()
 
         if response.get("code") == 0:
             logger.info("qmsg 推送成功！")
@@ -584,7 +593,7 @@ class WeCom:
             "corpid": self.CORPID,
             "corpsecret": self.CORPSECRET,
         }
-        req = requests.post(url, params=values, timeout=15)
+        req = post_with_retry(url, params=values, timeout=15)
         data = json.loads(req.text)
         return data["access_token"]
 
@@ -600,7 +609,7 @@ class WeCom:
             "safe": "0",
         }
         send_msges = bytes(json.dumps(send_values), "utf-8")
-        respone = requests.post(send_url, send_msges, timeout=15)
+        respone = post_with_retry(send_url, data=send_msges, timeout=15)
         respone = respone.json()
         return respone["errmsg"]
 
@@ -626,7 +635,7 @@ class WeCom:
             },
         }
         send_msges = bytes(json.dumps(send_values), "utf-8")
-        respone = requests.post(send_url, send_msges, timeout=15)
+        respone = post_with_retry(send_url, data=send_msges, timeout=15)
         respone = respone.json()
         return respone["errmsg"]
 
@@ -647,7 +656,7 @@ def wecom_bot(title: str, content: str) -> None:
     headers = {"Content-Type": "application/json;charset=utf-8"}
     data = {"msgtype": "text", "text": {"content": f"{title}\n\n{content}"}}
     try:
-        response = requests.post(
+        response = post_with_retry(
             url=url, data=json.dumps(data), headers=headers, timeout=15
         ).json()
 
@@ -694,7 +703,7 @@ def telegram_bot(title: str, content: str) -> None:
         )
         proxies = {"http": proxyStr, "https": proxyStr}
     try:
-        response = requests.post(
+        response = post_with_retry(
             url=url, headers=headers, params=payload, proxies=proxies, timeout=15
         ).json()
 
@@ -735,7 +744,9 @@ def aibotk(title: str, content: str) -> None:
     body = json.dumps(data).encode(encoding="utf-8")
     headers = {"Content-Type": "application/json"}
     try:
-        response = requests.post(url=url, data=body, headers=headers, timeout=15).json()
+        response = post_with_retry(
+            url=url, data=body, headers=headers, timeout=15
+        ).json()
         if response.get("code") == 0:
             logger.info("智能微秘书 推送成功！")
         else:
@@ -814,7 +825,7 @@ def pushme(title: str, content: str) -> None:
         "type": push_config.get("type") if push_config.get("type") else "",
     }
     try:
-        response = requests.post(url, data=data, timeout=15)
+        response = post_with_retry(url, data=data, timeout=15)
         if response.status_code == 200 and response.text == "success":
             logger.info("PushMe 推送成功！")
         else:
@@ -859,7 +870,9 @@ def chronocat(title: str, content: str) -> None:
                 ],
             }
             try:
-                response = requests.post(url, headers=headers, data=json.dumps(data), timeout=15)
+                response = post_with_retry(
+                    url, headers=headers, data=json.dumps(data), timeout=15
+                )
                 if response.status_code == 200:
                     logger.info(f"QQ消息({chat_id})推送成功！")
                 else:
@@ -903,7 +916,7 @@ def ntfy(title: str, content: str) -> None:
 
     url = push_config.get("NTFY_URL") + "/" + push_config.get("NTFY_TOPIC")
     try:
-        response = requests.post(url, data=data, headers=headers, timeout=15)
+        response = post_with_retry(url, data=data, headers=headers, timeout=15)
         if response.status_code == 200:
             logger.info("Ntfy 推送成功！")
         else:
@@ -961,7 +974,7 @@ def wxpusher_bot(title: str, content: str) -> None:
 
     headers = {"Content-Type": "application/json"}
     try:
-        response = requests.post(url=url, json=data, headers=headers, timeout=15).json()
+        response = post_with_retry(url=url, json=data, headers=headers, timeout=15).json()
 
         if response.get("code") == 1000:
             logger.info("wxpusher 推送成功！")
