@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <title>Pelican riding a bicycle</title>
+  <rect width="400" height="300" fill="#dff3ff"/>
+  <rect y="265" width="400" height="35" fill="#8bc34a"/>
+
+  <!-- wheels -->
+  <g fill="none" stroke="#222" stroke-width="6">
+    <circle cx="105" cy="220" r="45"/>
+    <circle cx="295" cy="220" r="45"/>
+  </g>
+  <circle cx="105" cy="220" r="5" fill="#222"/>
+  <circle cx="295" cy="220" r="5" fill="#222"/>
+
+  <!-- frame, seat, handlebar -->
+  <g fill="none" stroke="#c62828" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M105 220 L170 140 L200 220 Z"/>
+    <path d="M170 140 L265 140 L200 220"/>
+    <path d="M265 140 L295 220"/>
+    <path d="M265 140 L278 118"/>
+    <path d="M272 116 L292 104"/>
+    <path d="M170 140 L168 128"/>
+  </g>
+  <path d="M156 128 L182 128" stroke="#333" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- tail -->
+  <path d="M132 92 L108 78 L112 100 L128 110 Z" fill="#ddd" stroke="#333" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- legs and crank -->
+  <g stroke="#f7a21b" stroke-width="5" stroke-linecap="round">
+    <path d="M178 124 L198 214"/>
+    <path d="M188 126 L206 214"/>
+  </g>
+  <circle cx="200" cy="220" r="8" fill="#444"/>
+  <path d="M188 216 L212 216" stroke="#444" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- neck, body, head -->
+  <path d="M212 92 Q236 78 252 56" fill="none" stroke="#333" stroke-width="26" stroke-linecap="round"/>
+  <path d="M212 92 Q236 78 252 56" fill="none" stroke="#fafafa" stroke-width="20" stroke-linecap="round"/>
+  <ellipse cx="175" cy="100" rx="52" ry="28" transform="rotate(-12 175 100)" fill="#fafafa" stroke="#333" stroke-width="3"/>
+  <circle cx="258" cy="50" r="17" fill="#fafafa" stroke="#333" stroke-width="3"/>
+
+  <!-- wing -->
+  <path d="M140 100 Q175 62 218 96 Q190 112 140 110 Z" fill="#e0e0e0" stroke="#333" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- beak and pouch -->
+  <path d="M270 42 L344 58 Q350 64 344 70 L290 80 Q282 82 270 62 Z" fill="#f7a21b" stroke="#b36b00" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M292 76 Q300 100 280 102 Q262 96 272 66 Z" fill="#f0901a" stroke="#b36b00" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- eye -->
+  <circle cx="262" cy="45" r="4" fill="#111"/>
+  <circle cx="263" cy="44" r="1.5" fill="#fff"/>
+</svg>
